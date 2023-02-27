@@ -16,11 +16,11 @@ A menagerie of macro utilities and extensions for Scala 3.
 
 ## Overview
 
-Currently, this library supports `FromExpr` derivation. It also contains an opinionated set of
+Currently, this library supports `FromExpr` and `ToExpr` derivation. It also contains an opinionated set of
 extensions and extractors for working with `scala.quoted`; these are brought into scope with `import quotidian.syntax.*`.
 
 - [x] Add `FromExpr` derivation
-- [ ] Add `ToExpr` derivation
+- [x] Add `ToExpr` derivation
 - [ ] Add support for leaving out default values
 
 ## Derive `FromExpr` Instances
@@ -35,16 +35,21 @@ How boring! How trite! 😭
 import quotidian.*
 import scala.quoted.*
 
-final case class Person(name: String, age: Int, pets: Pet)
+final case class Person(name: String, age: Int, pet: Pet)
 
 object Person:
   given FromExpr[Person] with
     def unapply(expr: Expr[Person])(using Quotes): Option[Person] =
       import quotes.reflect.*
       expr match
-        case '{ Person(${ Expr(name) }, ${ Expr(age) }, ${ Expr(pets) }) } =>
-          Some(Person(name, age, pets))
+        case '{ Person(${ Expr(name) }, ${ Expr(age) }, ${ Expr(pet) }) } =>
+          Some(Person(name, age, pet))
         case _ => None
+
+  given ToExpr[Person] with
+    def apply(person: Person)(using Quotes): Expr[Person] =
+      import quotes.reflect.*
+      '{ Person(${ Expr(person.name) }, ${ Expr(person.age) }, ${ Expr(person.pet) }) }
 
 final case class Pet(name: String, hasBone: Boolean, favoritePerson: Option[Person])
 
@@ -56,6 +61,12 @@ object Pet:
         case '{ Pet(${ Expr(name) }, ${ Expr(hasBone) }, ${ Expr(favoritePerson) }) } =>
           Some(Pet(name, hasBone, favoritePerson))
         case _ => None
+
+  given ToExpr[Pet] with
+    def apply(pet: Pet)(using Quotes): Expr[Pet] =
+      import quotes.reflect.*
+      '{ Pet(${ Expr(pet.name) }, ${ Expr(pet.hasBone) }, ${ Expr(pet.favoritePerson) }) }
+
 
 enum Fruit:
   case Apple(variety: String)
@@ -71,6 +82,14 @@ object Fruit:
         case '{ Fruit.Orange(${ Expr(juiciness) }) } => Some(Fruit.Orange(juiciness))
         case '{ Fruit.Banana(${ Expr(isYellow) }) }  => Some(Fruit.Banana(isYellow))
         case _ => None
+
+  given ToExpr[Fruit] with
+    def apply(fruit: Fruit)(using Quotes): Expr[Fruit] =
+      import quotes.reflect.*
+      fruit match
+        case Fruit.Apple(variety)    => '{ Fruit.Apple(${ Expr(variety) }) }
+        case Fruit.Orange(juiciness) => '{ Fruit.Orange(${ Expr(juiciness) }) }
+        case Fruit.Banana(isYellow)  => '{ Fruit.Banana(${ Expr(isYellow) }) }
 ```
 
 ### After
@@ -79,12 +98,12 @@ Much better! Much more concise! 😍
 
 ```scala
 import quotidian.*
-import scala.quoted.FromExpr
+import scala.quoted.*
 
-case class Person(name: String, age: Int, pets: Pet) derives FromExpr
-case class Pet(name: String, hasBone: Boolean, favoritePerson: Option[Person]) derives FromExpr
+case class Person(name: String, age: Int, pet: Pet) derives FromExpr, ToExpr
+case class Pet(name: String, hasBone: Boolean, favoritePerson: Option[Person]) derives FromExpr, ToExpr
 
-enum Fruit derives FromExpr:
+enum Fruit derives FromExpr, ToExpr:
   case Apple(variety: String)
   case Orange(juiciness: Int)
   case Banana(isYellow: Boolean)

@@ -3,25 +3,23 @@ package quotidian
 import scala.quoted.*
 
 object DeriveFromExprSpecMacro:
-  inline def testFromExprPerson(inline personExpr: Person): Unit = ${ personFromExpr('personExpr) }
-  inline def testFromExprFruit(inline fruitExpr: Fruit): Unit    = ${ fruitFromExpr('fruitExpr) }
-  inline def testFromExprJob(inline jobExpr: Job): Unit          = ${ jobFromExpr('jobExpr) }
+  inline def testRoundTripPerson(inline personExpr: Person): Person = ${ roundTripPerson('personExpr) }
+  inline def testRoundTripFruit(inline fruitExpr: Fruit): Fruit     = ${ roundTripFruit('fruitExpr) }
+  inline def testRoundTripJob(inline jobExpr: Job): Job             = ${ jobFromExpr('jobExpr) }
 
-  def personFromExpr(personExpr: Expr[Person])(using Quotes): Expr[Unit] =
-    fromExprTest[Person](personExpr)
+  def roundTripPerson(personExpr: Expr[Person])(using Quotes): Expr[Person] =
+    fromToExprRoundTripTest[Person](personExpr)
 
-  def fruitFromExpr(fruitExpr: Expr[Fruit])(using Quotes): Expr[Unit] =
-    fromExprTest[Fruit](fruitExpr)
+  def roundTripFruit(fruitExpr: Expr[Fruit])(using Quotes): Expr[Fruit] =
+    fromToExprRoundTripTest[Fruit](fruitExpr)
 
-  def jobFromExpr(jobExpr: Expr[Job])(using Quotes): Expr[Unit] =
-    fromExprTest[Job](jobExpr)
+  def jobFromExpr(jobExpr: Expr[Job])(using Quotes): Expr[Job] =
+    fromToExprRoundTripTest[Job](jobExpr)
 
-  // abstract the common code
-  def fromExprTest[A: Type: FromExpr](expr: Expr[A])(using Quotes): Expr[Unit] =
+  def fromToExprRoundTripTest[A: Type: FromExpr: ToExpr](expr: Expr[A])(using Quotes): Expr[A] =
     import quotes.reflect.*
     expr.value match
       case Some(value) =>
-        val message = s"FromExpr(${TypeRepr.of[A]}) = $value"
-        '{ println(${ Expr(message) }) }
+        Expr(value)
       case None =>
         report.errorAndAbort(s"Could not derive ${TypeRepr.of[A]} from Expr ${expr.show}")

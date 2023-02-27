@@ -20,23 +20,22 @@ object DeriveFromExpr:
       case '{ $m: Mirror.SumOf[A] { type MirroredElemTypes = types } } =>
         val cases = TypeRepr.of[types].tupleToList
         deriveSumImpl[A](cases)
+  end deriveImpl
 
   def deriveProductImpl[A: Type](using Quotes): Expr[FromExpr[A]] =
     import quotes.reflect.*
 
-    def makeMatch(expr: Expr[Expr[A]], quotes: Expr[Quotes]) =
-      val unapply = deriveProductCaseDef[A](quotes)
-      Match(expr.asTerm, List(unapply)).asExprOf[Option[A]]
+    def makeMatch(using Quotes)(expr: Expr[Expr[A]], quotesExpr: Expr[Quotes]) =
+      import quotes.reflect.*
+      val unapply  = deriveProductCaseDef[A](quotesExpr)
+      val fallback = CaseDef(Wildcard(), None, '{ None }.asTerm)
+      Match(expr.asTerm, List(unapply, fallback)).asExprOf[Option[A]]
 
     val ex = '{
       new FromExpr[A]:
         def unapply(expr: Expr[A])(using quotes: Quotes): Option[A] =
           import quotes.reflect.*
-          try ${ makeMatch('expr, 'quotes) }
-          catch
-            case ex: MatchError =>
-              report.warning(s"Could not extract value for ${expr.show}")
-              None
+          ${ makeMatch('expr, 'quotes) }
 
     }
 
@@ -46,45 +45,79 @@ object DeriveFromExpr:
   def deriveSumImpl[A: Type](using Quotes)(cases: List[quotes.reflect.TypeRepr]): Expr[FromExpr[A]] =
     import quotes.reflect.*
 
-    def makeMatch(expr: Expr[Expr[A]], quotes: Expr[Quotes]) =
+    def makeMatch(using Quotes)(expr: Expr[Expr[A]], quotesExpr: Expr[Quotes]) =
+      import quotes.reflect.*
       val caseDefs = cases.map { t =>
         t.asType match
           case '[t] =>
-            deriveProductCaseDef[t](quotes)
+            deriveProductCaseDef[t](quotesExpr)
       }
-      Match(expr.asTerm, caseDefs).asExprOf[Option[A]]
+      val fallback = CaseDef(Wildcard(), None, '{ None }.asTerm)
+      Match(expr.asTerm, caseDefs.appended(fallback)).asExprOf[Option[A]]
 
     val ex = '{
       new FromExpr[A]:
         def unapply(expr: Expr[A])(using quotes: Quotes): Option[A] =
           import quotes.reflect.*
-          try ${ makeMatch('expr, 'quotes) }
-          catch
-            case ex: MatchError =>
-              report.warning(s"Could not extract value for ${expr.show}")
-              None
-
+          ${ makeMatch('expr, 'quotes) }
     }
 
     ex.asInstanceOf[Expr[FromExpr[A]]]
   end deriveSumImpl
 
-  private def deriveProductCaseDef[A: Type](quoteExpr: Expr[Quotes])(using Quotes): quotes.reflect.CaseDef =
+  private def deriveSingletonCaseDef[A: Type](quotesExpr: Expr[Quotes])(using Quotes): quotes.reflect.CaseDef =
+    import quotes.reflect.*
+
+    // TODO: Certainly there is a better way to do this
+    // True Singleton = case object or enum case with no parameter list
+    // val isTrueSingleton = Symbol.of[A].companionModule == Symbol.of[A]
+    val isTrueSingleton = Symbol.of[A].primaryConstructor.paramSymss.isEmpty
+
+    val exprMatchTerm = '{ $quotesExpr.asInstanceOf[quoted.runtime.QuoteMatching].ExprMatch }.asTerm
+    val exprMatchUnapply =
+      exprMatchTerm.selectUnique("unapply").appliedToTypes(List(TypeRepr.of[EmptyTuple], TypeRepr.of[EmptyTuple]))
+
+    val constructAExpr =
+      if isTrueSingleton then Ref(TypeRepr.of[A].termSymbol).asExprOf[A]
+      else Ref(Symbol.of[A].companionModule).selectUnique("apply").appliedToNone.asExprOf[A]
+
+    val patternHoleImplicit =
+      Select
+        .unique(
+          '{ runtime.Expr }.asTerm
+            .selectUnique("quote")
+            .appliedToTypes(List(TypeRepr.of[Any]))
+            .appliedTo(constructAExpr.asTerm),
+          "apply"
+        )
+        .appliedTo(quotesExpr.asTerm)
+
+    CaseDef(
+      Unapply(
+        exprMatchUnapply,
+        List(patternHoleImplicit),
+        List('{ EmptyTuple }.asTerm)
+      ),
+      None,
+      '{ Some(${ constructAExpr }) }.asTerm
+    )
+  end deriveSingletonCaseDef
+
+  private def deriveProductCaseDef[A: Type](using Quotes)(quotesExpr: Expr[Quotes]): quotes.reflect.CaseDef =
     import quotes.reflect.*
 
     val exprUnapply: Term = '{ Expr }.asTerm.selectUnique("unapply")
     val fields            = TypeTree.of[A].symbol.caseFields
     val fieldTypes        = fields.map(_.returnType.asType)
 
-    val exprMatchTerm = '{ $quoteExpr.asInstanceOf[quoted.runtime.QuoteMatching].ExprMatch }.asTerm
+    if fields.isEmpty then return deriveSingletonCaseDef[A](quotesExpr)
+
+    val exprMatchTerm = '{ $quotesExpr.asInstanceOf[quoted.runtime.QuoteMatching].ExprMatch }.asTerm
 
     val fieldExprTypes     = fieldTypes.map { case '[t] => TypeRepr.of[Expr[t]] }
     val fieldExprTupleType = TypeRepr.makeTuple(fieldExprTypes)
 
-    val tupleCompanion =
-      fields.length match
-        case 0 => Symbol.classSymbol("EmptyTuple").companionModule
-        case n => Symbol.classSymbol("scala.Tuple" + n).companionModule
+    val tupleCompanion = Symbol.classSymbol("scala.Tuple" + fields.length).companionModule
 
     val patternHoles      = fieldTypes.map { case '[t] => '{ runtime.Patterns.patternHole[t] }.asTerm }
     val companionApply    = Term.companionOf[A].selectUnique("apply")
@@ -99,7 +132,7 @@ object DeriveFromExpr:
             .appliedTo(applyPatternHoles),
           "apply"
         )
-        .appliedTo(quoteExpr.asTerm)
+        .appliedTo(quotesExpr.asTerm)
 
     val (binds, unapplyTerms) = fields.map { field =>
       val fieldType  = field.returnType
@@ -114,7 +147,7 @@ object DeriveFromExpr:
 
       bindSymbol -> Unapply(
         exprUnapply.appliedToType(fieldType),
-        List(fromExpr.asTerm, quoteExpr.asTerm),
+        List(fromExpr.asTerm, quotesExpr.asTerm),
         List(Bind(bindSymbol, Wildcard()))
       )
     }.unzip

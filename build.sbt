@@ -22,6 +22,9 @@ lazy val root = (project in file("."))
       "dev.zio" %% "zio-test-sbt" % "2.0.9" % Test
     ),
     scalacOptions ++= Seq(
-      "-deprecation"
+      "-deprecation",
+      "-explain",
+      "-Xcheck-macros"
+//      "-Ycheck:all"
     )
   )

@@ -56,6 +56,14 @@ extension (using Quotes)(term: quotes.reflect.Term)
     import quotes.reflect.*
     Select.unique(term, name)
 
+  def selectOverloaded(
+      name: String,
+      targs: List[quotes.reflect.TypeRepr],
+      args: List[quotes.reflect.Term]
+  ): quotes.reflect.Term =
+    import quotes.reflect.*
+    Select.overloaded(term, name, targs, args)
+
 extension (using Quotes)(tpe: quotes.reflect.TypeRepr)
   def typeTree: quotes.reflect.TypeTree =
     import quotes.reflect.*
