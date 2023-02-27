@@ -67,7 +67,7 @@ Much better! Much more concise! 😍
 
 ```scala
 import quotidian.*
-import scaal.quoted.FromExpr
+import scala.quoted.FromExpr
 
 case class Person(name: String, age: Int, pets: Pet) derives FromExpr
 case class Pet(name: String, hasBone: Boolean, favoritePerson: Option[Person]) derives FromExpr
