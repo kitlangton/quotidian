@@ -20,3 +20,6 @@ given [E, A](using fromExprE: FromExpr[E], fromExprA: FromExpr[A]): FromExpr[Eit
         case '{ Left($e) }  => fromExprE.unapply(e.asInstanceOf[Expr[E]]).map(Left(_))
         case '{ Right($a) } => fromExprA.unapply(a.asInstanceOf[Expr[A]]).map(Right(_))
         case _              => None
+
+extension (fromExpr: FromExpr.type) //
+  inline def derived[A]: FromExpr[A] = ${ DeriveFromExpr.deriveImpl[A] }

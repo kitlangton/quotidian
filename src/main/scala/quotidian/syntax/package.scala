@@ -79,7 +79,7 @@ extension [A](using Quotes)(expr: Expr[A])
       case UnderlyingFunction(term) =>
         println(s"Underlying function: ${term}")
         term
-      case _ => report.throwError(s"Expected a function application, but got ${expr.show}")
+      case _ => report.errorAndAbort(s"Expected a function application, but got ${expr.show}")
 
 // Extractors
 
