@@ -62,6 +62,14 @@ extension (using Quotes)(tpe: quotes.reflect.TypeRepr)
     tpe.asType match
       case '[t] => TypeTree.of[t]
 
+  /** Turn a tuple of a TypeRepr into a List[TypeRepr]
+    */
+  def tupleToList: List[quotes.reflect.TypeRepr] =
+    import quotes.reflect.*
+    tpe.asType match
+      case '[t *: ts]    => TypeRepr.of[t] :: TypeRepr.of[ts].tupleToList
+      case '[EmptyTuple] => Nil
+
 extension [A](using Quotes)(expr: Expr[A])
   /** Returns the underlying function term of a function application.
     */

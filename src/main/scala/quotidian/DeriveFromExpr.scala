@@ -4,11 +4,72 @@ import scala.quoted.*
 import scala.compiletime.*
 import quotidian.syntax.*
 
+import scala.deriving.Mirror
+
 object DeriveFromExpr:
 
-  inline def derived[A]: FromExpr[A] = ${ deriveProductImpl[A] }
+  inline def derived[A]: FromExpr[A] = ${ deriveImpl[A] }
 
-  def deriveProductCaseDef[A: Type](quoteExpr: Expr[Quotes])(using Quotes): quotes.reflect.CaseDef =
+  def deriveImpl[A: Type](using Quotes): Expr[FromExpr[A]] =
+    import quotes.reflect.*
+    def error = report.errorAndAbort(
+      s"Cannot derive FromExpr for ${TypeRepr.of[A].show}. Only case classes, sealed traits, and enums are supported"
+    )
+    Expr.summon[Mirror.Of[A]].getOrElse(error) match
+      case '{ $m: Mirror.ProductOf[A] } => deriveProductImpl[A]
+      case '{ $m: Mirror.SumOf[A] { type MirroredElemTypes = types } } =>
+        val cases = TypeRepr.of[types].tupleToList
+        deriveSumImpl[A](cases)
+
+  def deriveProductImpl[A: Type](using Quotes): Expr[FromExpr[A]] =
+    import quotes.reflect.*
+
+    def makeMatch(expr: Expr[Expr[A]], quotes: Expr[Quotes]) =
+      val unapply = deriveProductCaseDef[A](quotes)
+      Match(expr.asTerm, List(unapply)).asExprOf[Option[A]]
+
+    val ex = '{
+      new FromExpr[A]:
+        def unapply(expr: Expr[A])(using quotes: Quotes): Option[A] =
+          import quotes.reflect.*
+          try ${ makeMatch('expr, 'quotes) }
+          catch
+            case ex: MatchError =>
+              report.warning(s"Could not extract value for ${expr.show}")
+              None
+
+    }
+
+    ex.asInstanceOf[Expr[FromExpr[A]]]
+  end deriveProductImpl
+
+  def deriveSumImpl[A: Type](using Quotes)(cases: List[quotes.reflect.TypeRepr]): Expr[FromExpr[A]] =
+    import quotes.reflect.*
+
+    def makeMatch(expr: Expr[Expr[A]], quotes: Expr[Quotes]) =
+      val caseDefs = cases.map { t =>
+        t.asType match
+          case '[t] =>
+            deriveProductCaseDef[t](quotes)
+      }
+      Match(expr.asTerm, caseDefs).asExprOf[Option[A]]
+
+    val ex = '{
+      new FromExpr[A]:
+        def unapply(expr: Expr[A])(using quotes: Quotes): Option[A] =
+          import quotes.reflect.*
+          try ${ makeMatch('expr, 'quotes) }
+          catch
+            case ex: MatchError =>
+              report.warning(s"Could not extract value for ${expr.show}")
+              None
+
+    }
+
+    ex.asInstanceOf[Expr[FromExpr[A]]]
+  end deriveSumImpl
+
+  private def deriveProductCaseDef[A: Type](quoteExpr: Expr[Quotes])(using Quotes): quotes.reflect.CaseDef =
     import quotes.reflect.*
 
     val exprUnapply: Term = '{ Expr }.asTerm.selectUnique("unapply")
@@ -73,28 +134,6 @@ object DeriveFromExpr:
       '{ Some(${ constructAExpr }) }.asTerm
     )
   end deriveProductCaseDef
-
-  def deriveProductImpl[A: Type](using Quotes): Expr[FromExpr[A]] =
-    import quotes.reflect.*
-
-    def makeMatch(expr: Expr[Expr[A]], quotes: Expr[Quotes]) =
-      val unapply = deriveProductCaseDef[A](quotes)
-      Match(expr.asTerm, List(unapply)).asExprOf[Option[A]]
-
-    val ex = '{
-      new FromExpr[A]:
-        def unapply(expr: Expr[A])(using quotes: Quotes): Option[A] =
-          import quotes.reflect.*
-          try ${ makeMatch('expr, 'quotes) }
-          catch
-            case ex: MatchError =>
-              report.warning(s"Could not extract value for ${expr.show}")
-              None
-
-    }
-
-    ex.asInstanceOf[Expr[FromExpr[A]]]
-  end deriveProductImpl
 
   private var _id: Long = 0
   private def freshName(name: String): String =
