@@ -7,15 +7,14 @@ import quotidian.syntax.*
 import scala.deriving.Mirror
 
 object DeriveFromExpr:
-
   inline def derived[A]: FromExpr[A] = ${ deriveImpl[A] }
 
   def deriveImpl[A: Type](using Quotes): Expr[FromExpr[A]] =
     import quotes.reflect.*
-    def error = report.errorAndAbort(
+    def reportError = report.errorAndAbort(
       s"Cannot derive FromExpr for ${TypeRepr.of[A].show}. Only case classes, sealed traits, and enums are supported"
     )
-    Expr.summon[Mirror.Of[A]].getOrElse(error) match
+    Expr.summon[Mirror.Of[A]].getOrElse(reportError) match
       case '{ $m: Mirror.ProductOf[A] } => deriveProductImpl[A]
       case '{ $m: Mirror.SumOf[A] { type MirroredElemTypes = types } } =>
         val cases = TypeRepr.of[types].tupleToList
@@ -31,15 +30,14 @@ object DeriveFromExpr:
       val fallback = CaseDef(Wildcard(), None, '{ None }.asTerm)
       Match(expr.asTerm, List(unapply, fallback)).asExprOf[Option[A]]
 
-    val ex = '{
+    '{
       new FromExpr[A]:
         def unapply(expr: Expr[A])(using quotes: Quotes): Option[A] =
+          given Quotes = quotes
           import quotes.reflect.*
           ${ makeMatch('expr, 'quotes) }
 
     }
-
-    ex.asInstanceOf[Expr[FromExpr[A]]]
   end deriveProductImpl
 
   def deriveSumImpl[A: Type](using Quotes)(cases: List[quotes.reflect.TypeRepr]): Expr[FromExpr[A]] =
@@ -49,20 +47,17 @@ object DeriveFromExpr:
       import quotes.reflect.*
       val caseDefs = cases.map { t =>
         t.asType match
-          case '[t] =>
-            deriveProductCaseDef[t](quotesExpr)
+          case '[t] => deriveProductCaseDef[t](quotesExpr)
       }
       val fallback = CaseDef(Wildcard(), None, '{ None }.asTerm)
       Match(expr.asTerm, caseDefs.appended(fallback)).asExprOf[Option[A]]
 
-    val ex = '{
+    '{
       new FromExpr[A]:
         def unapply(expr: Expr[A])(using quotes: Quotes): Option[A] =
           import quotes.reflect.*
           ${ makeMatch('expr, 'quotes) }
     }
-
-    ex.asInstanceOf[Expr[FromExpr[A]]]
   end deriveSumImpl
 
   private def deriveSingletonCaseDef[A: Type](quotesExpr: Expr[Quotes])(using Quotes): quotes.reflect.CaseDef =
@@ -107,7 +102,7 @@ object DeriveFromExpr:
     import quotes.reflect.*
 
     val exprUnapply: Term = '{ Expr }.asTerm.selectUnique("unapply")
-    val fields            = TypeTree.of[A].symbol.caseFields
+    val fields            = TypeRepr.of[A].typeSymbol.caseFields
     val fieldTypes        = fields.map(_.returnType.asType)
 
     if fields.isEmpty then return deriveSingletonCaseDef[A](quotesExpr)
@@ -139,15 +134,13 @@ object DeriveFromExpr:
       val name       = freshName(field.name)
       val bindSymbol = Symbol.newBind(Symbol.spliceOwner, name, Flags.EmptyFlags, fieldType)
 
-      val fromExpr = field.returnType.asType match
+      val fromExpr = fieldType.asType match
         case '[t] =>
-          Expr.summon[FromExpr[t]].getOrElse {
-            report.errorAndAbort(s"Cannot summon FromExpr[${field.returnType.show}]")
-          }
+          '{ scala.compiletime.summonInline[FromExpr[t]] }.asTerm
 
       bindSymbol -> Unapply(
         exprUnapply.appliedToType(fieldType),
-        List(fromExpr.asTerm, quotesExpr.asTerm),
+        List(fromExpr, quotesExpr.asTerm),
         List(Bind(bindSymbol, Wildcard()))
       )
     }.unzip

@@ -1,9 +1,14 @@
 package quotidian
 
+import scala.deriving.Mirror
 import scala.quoted.*
 
 final case class Person(name: String, age: Int, pets: Pet) derives FromExpr, ToExpr
 final case class Pet(name: String, hasBone: Boolean, favoritePerson: Option[Person]) derives FromExpr, ToExpr
+
+//final case class GenericType[A](value: A) derives ToExpr
+//object GenericType:
+//  given toExpr[A: Type: ToExpr]: ToExpr[GenericType[A]] = DeriveToExpr.derived[GenericType[A]]
 
 enum Fruit derives FromExpr, ToExpr:
   case Apple(variety: String)

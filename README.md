@@ -21,6 +21,7 @@ extensions and extractors for working with `scala.quoted`; these are brought int
 
 - [x] Add `FromExpr` derivation
 - [x] Add `ToExpr` derivation
+- [ ] Support Parameterized Types
 - [ ] Add support for leaving out default values
 
 ## Derive `FromExpr` Instances
