@@ -62,15 +62,17 @@ object DeriveToExpr:
   def deriveProductCaseDef[A: Type](quotesExpr: Expr[Quotes])(using Quotes): quotes.reflect.CaseDef =
     import quotes.reflect.*
 
-    val fields = Field.forProduct[A]
+    val productMirror = MacroMirror.summonProduct[A]
+    val fields        = productMirror.elems
 
     val (bindSymbols, binds) = fields.map { field =>
-      val bindSymbol = Symbol.newBind(Symbol.spliceOwner, freshName(field.name), Flags.EmptyFlags, field.returnType)
+      // TODO: Use Symbol.freshName when it is no longer experimental
+      val bindSymbol = Symbol.newBind(Symbol.spliceOwner, freshName(field.label), Flags.EmptyFlags, field.typeRepr)
       bindSymbol -> Bind(bindSymbol, Wildcard())
     }.unzip
 
-    def makeNestedSplice(field: Field[quotes.type], bind: Symbol) =
-      field.returnType.asType match
+    def makeNestedSplice(field: MirrorElem[quotes.type, ?], bind: Symbol) =
+      field.asType match
         case '[t] =>
           val toExpr: Expr[ToExpr[t]] =
             '{ scala.compiletime.summonInline[ToExpr[t]] }
@@ -82,7 +84,7 @@ object DeriveToExpr:
               .appliedTo(quotesExpr.asTerm)
               .asExprOf[Expr[t]]
 
-          val contextFun = '{ (q: quoted.Quotes) ?=> ${ exprApply(quotesExpr) } }.asTerm
+          val contextFun = '{ (q: quoted.Quotes) ?=> ${ exprApply('q) } }.asTerm
 
           '{ runtime.Expr }.asTerm
             .selectOverloaded("nestedSplice", List(TypeRepr.of[t]), List(quotesExpr.asTerm))
@@ -91,7 +93,7 @@ object DeriveToExpr:
     val nestedSplices = fields.zip(bindSymbols).map(makeNestedSplice)
 
     val isTrueSingleton = !TypeRepr.of[A].unapplied.termSymbol.isNoSymbol
-    val applied         = Term.constructProduct[A](nestedSplices)
+    val applied         = productMirror.construct(nestedSplices).asTerm
 
     val makeQuote =
       Select

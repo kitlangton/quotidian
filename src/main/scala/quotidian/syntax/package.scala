@@ -14,27 +14,11 @@ extension (using Quotes)(self: quotes.reflect.Symbol.type)
 extension (using Quotes)(self: quotes.reflect.Term.type)
   def companionOf[A: Type]: quotes.reflect.Term =
     import quotes.reflect.*
-    Ident(TypeRepr.of[A].typeSymbol.companionModule.termRef)
+    Term.companionOf(TypeRepr.of[A])
 
-  def constructProduct[A: Type](args: List[quotes.reflect.Term]): quotes.reflect.Term =
+  def companionOf(tpe: quotes.reflect.TypeRepr): quotes.reflect.Term =
     import quotes.reflect.*
-    TypeRepr.of[A] match
-      case AppliedType(t, targs) =>
-        t.asType match
-          case '[t] =>
-            val companion = Term.companionOf[t]
-//            val isTrueSingleton = Symbol.of[t].primaryConstructor.paramSymss.isEmpty
-//            if isTrueSingleton then companion.appliedToTypes(targs)
-//            else
-
-            val res = companion.selectUnique("apply").appliedToTypes(targs).appliedToArgs(args)
-//            report.errorAndAbort(s"res = ${res.show}, args = ${args}")
-            res
-      case _ =>
-        val companion       = Term.companionOf[A]
-        val isTrueSingleton = Symbol.of[A].primaryConstructor.paramSymss.isEmpty
-        if isTrueSingleton then companion
-        else companion.selectUnique("apply").appliedToArgs(args)
+    Ident(tpe.typeSymbol.companionModule.termRef)
 
 extension (using Quotes)(self: quotes.reflect.TypeRepr.type)
 
@@ -84,12 +68,45 @@ extension (using Quotes)(self: quotes.reflect.Term)
     import quotes.reflect.*
     Select.overloaded(self, name, targs, args)
 
+  def call(name: String): quotes.reflect.Term =
+    TermUtils.callImpl(self, name, List.empty[quotes.reflect.TypeRepr], List.empty[quotes.reflect.Term])
+
+  def call(name: String, args: List[quotes.reflect.Term]): quotes.reflect.Term =
+    TermUtils.callImpl(self, name, List.empty[quotes.reflect.TypeRepr], args)
+
+  def call(
+      name: String,
+      targs: List[quotes.reflect.TypeRepr],
+      args: List[quotes.reflect.Term] = List.empty
+  ): quotes.reflect.Term =
+    TermUtils.callImpl(self, name, targs, args)
+
+object TermUtils:
+  def callImpl(using Quotes)(
+      self: quotes.reflect.Term,
+      name: String,
+      targs: List[quotes.reflect.TypeRepr],
+      args: List[quotes.reflect.Term]
+  ): quotes.reflect.Term =
+    import quotes.reflect.*
+    // TODO: Test & fix this to work against methods with multiple overloads
+    val symbol = self.symbol.methodMember(name).headOption.getOrElse(self.symbol.fieldMember(name))
+    symbol.paramSymss match
+      case Nil => self.selectUnique(name)
+      case _   => self.selectOverloaded(name, targs, args)
+
 extension (using Quotes)(self: quotes.reflect.TypeRepr)
   def unapplied: quotes.reflect.TypeRepr =
     import quotes.reflect.*
     self match
       case AppliedType(t, _) => t.unapplied
       case _                 => self
+
+  def valueAs[A]: A =
+    import quotes.reflect.*
+    self.asType match
+      case '[t] => Type.valueOfConstant[t].get.asInstanceOf[A]
+      case _    => report.errorAndAbort(s"Expected a literal, but got ${self.show}")
 
   def isGeneric: Boolean =
     import quotes.reflect.*
@@ -129,18 +146,3 @@ object UnderlyingTypeConstructor:
     term match
       case AppliedType(t, _) => UnderlyingTypeConstructor.unapply(t)
       case t                 => Some(t)
-
-final class Field[Q <: Quotes & Singleton](using val quotes: Q)(
-    val symbol: quotes.reflect.Symbol,
-    val name: String,
-    val returnType: quotes.reflect.TypeRepr
-)
-
-object Field:
-  def forProduct[A: Type](using quotes: Quotes): List[Field[quotes.type]] =
-    import quotes.reflect.*
-    val fields     = TypeRepr.fieldTypes[A]
-    val caseFields = TypeRepr.of[A].typeSymbol.caseFields
-    fields.zip(caseFields).map { (tpe, sym) =>
-      new Field[quotes.type](sym, sym.name, tpe)
-    }
