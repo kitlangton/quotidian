@@ -11,7 +11,7 @@
 A menagerie of macro utilities and extensions for Scala 3.
 
 ```scala
-"io.github.kitlangton" %% "quotidian" % "0.0.3"
+"io.github.kitlangton" %% "quotidian" % "0.0.6"
 ```
 
 ## Overview
