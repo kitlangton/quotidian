@@ -16,6 +16,12 @@ Global / onChangedBuildSource := ReloadOnSourceChanges
 
 lazy val root = (project in file("."))
   .settings(
+    name := "quotidian"
+  )
+  .aggregate(core)
+
+lazy val core = (project in file("modules/core"))
+  .settings(
     name := "quotidian",
     libraryDependencies ++= Seq(
       "dev.zio" %% "zio-test"     % "2.0.9" % Test,
@@ -28,3 +34,13 @@ lazy val root = (project in file("."))
 //      "-Ycheck:all"
     )
   )
+
+lazy val examples = (project in file("examples"))
+  .settings(
+    name := "quotidian-examples",
+    libraryDependencies ++= Seq(
+      "dev.zio" %% "zio-test"     % "2.0.9" % Test,
+      "dev.zio" %% "zio-test-sbt" % "2.0.9" % Test
+    )
+  )
+  .dependsOn(core)

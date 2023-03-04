@@ -3,8 +3,27 @@ package quotidian.syntax
 import scala.annotation.tailrec
 import scala.deriving.Mirror
 import scala.quoted.*
+import scala.reflect.ClassTag
 
 // Extensions
+
+extension (self: Expr.type)
+
+  def ofArray[A: Type](using Quotes)(as: Expr[A]*): Expr[Array[A]] =
+    '{ Array(${ Expr.ofSeq(as) }*)(using ${ Expr.summon[ClassTag[A]].get }) }
+
+  /** Creates an interpolated String Expr from a list of strings and expressions.
+    */
+  def interpolatedString(using Quotes)(as: (String | Expr[?])*): Expr[String] =
+    import quotes.reflect.*
+    val grouped = as.toList.foldRight(List.empty) {
+      case (s: String, Nil)              => List(s)
+      case (s: String, (h: String) :: t) => (s + h) :: t
+      case (a, acc)                      => a :: acc
+    }
+    val parts = Expr.ofSeq(grouped.collect { case s: String => Expr(s) })
+    val args  = Expr.ofSeq(grouped.collect { case e: Expr[?] => e })
+    '{ StringContext($parts*).s($args*) }
 
 extension (using Quotes)(self: quotes.reflect.Symbol.type)
   def of[A: Type]: quotes.reflect.Symbol =

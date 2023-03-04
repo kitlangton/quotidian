@@ -71,7 +71,7 @@ object DeriveToExpr:
       bindSymbol -> Bind(bindSymbol, Wildcard())
     }.unzip
 
-    def makeNestedSplice(field: MirrorElem[quotes.type, ?], bind: Symbol) =
+    def makeNestedSplice(field: MirrorElem[quotes.type, A, ?], bind: Symbol) =
       field.asType match
         case '[t] =>
           val toExpr: Expr[ToExpr[t]] =
