@@ -1,4 +1,5 @@
 package quotidian.examples.show
+import Show.show
 
 trait Show[A]:
   def show(a: A): String
@@ -19,8 +20,6 @@ object Show:
 
   inline def derived[A]: Show[A] = ${ ShowMacro.showImpl[A] }
 
-import Show.*
-
 final case class Person(name: String, age: Int) derives Show
 final case class Pet(name: String, bones: Int, owner: Option[Person]) derives Show
 
@@ -29,7 +28,8 @@ enum Color derives Show:
   case Green(name: String)
   case Blue
 
-object ShowDemo extends App:
+@main
+def showDemo(): Unit =
   val person = Person("Alice", 40)
   val pet    = Pet("Fido", 3, Some(person))
   println(pet.show)

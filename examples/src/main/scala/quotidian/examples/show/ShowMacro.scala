@@ -16,10 +16,8 @@ object ShowMacro:
       report.throwError(s"${Type.show[A]} must be a case class, enum, or sealed trait.")
     }
     mirror match
-      case m: ProductMacroMirror[?, ?] =>
-        showProductImpl[A](m)
-      case m: SumMacroMirror[?, ?] =>
-        showSumImpl[A](m)
+      case m: ProductMacroMirror[?, ?] => showProductImpl[A](m)
+      case m: SumMacroMirror[?, ?]     => showSumImpl[A](m)
 
   def showSumImpl[A: Type](using Quotes)(mirror: SumMacroMirror[quotes.type, A]): Expr[Show[A]] =
     import quotes.reflect.*
@@ -51,10 +49,8 @@ object ShowMacro:
       }
       Expr.interpolatedString((s"${mirror.label}(" :: labeledValues) :+ ")"*)
 
-    val showInstance = '{
+    '{
       new Show[A]:
         def show(a: A): String =
           ${ makeString('a) }
     }
-
-    showInstance
