@@ -1,41 +1,23 @@
 package quotidian.examples.show
 
 import quotidian.MacroMirror
-import quotidian.MacroMirror.{ProductMacroMirror, SumMacroMirror}
+import quotidian.MacroMirror.{Product, Sum}
 import quotidian.syntax.*
 import scala.deriving.*
 
 import scala.quoted.*
 
 object ShowMacro:
-  inline def derived[A]: Show[A] = ${ showImpl[A] }
-
-  def showImpl[A: Type](using Quotes): Expr[Show[A]] =
+  def deriveShow[A: Type](using Quotes): Expr[Show[A]] =
     import quotes.reflect.*
     val mirror = MacroMirror.summon[A].getOrElse {
       report.throwError(s"${Type.show[A]} must be a case class, enum, or sealed trait.")
     }
     mirror match
-      case m: ProductMacroMirror[?, ?] => showProductImpl[A](m)
-      case m: SumMacroMirror[?, ?]     => showSumImpl[A](m)
+      case m: Product[?, ?] => deriveShowProduct[A](m)
+      case m: Sum[?, ?]     => deriveShowSum[A](m)
 
-  def showSumImpl[A: Type](using Quotes)(mirror: SumMacroMirror[quotes.type, A]): Expr[Show[A]] =
-    import quotes.reflect.*
-
-    '{
-      new Show[A]:
-        def show(a: A): String =
-          val sumMirror = ${ Expr.summon[Mirror.SumOf[A]].get }
-          val ord       = sumMirror.ordinal(a)
-          val instances = ${
-            Expr.ofArray(mirror.elemTypes.map { case '[t] =>
-              Expr.summon[Show[t]].getOrElse(showImpl[t])
-            }*)
-          }
-          instances(ord).asInstanceOf[Show[Any]].show(a)
-    }
-
-  def showProductImpl[A: Type](using Quotes)(mirror: ProductMacroMirror[quotes.type, A]): Expr[Show[A]] =
+  def deriveShowProduct[A: Type](using Quotes)(mirror: Product[quotes.type, A]): Expr[Show[A]] =
     import quotes.reflect.*
 
     def makeString(a: Expr[A]): Expr[String] =
@@ -44,7 +26,7 @@ object ShowMacro:
         val comma     = if elem == mirror.elems.head then "" else ", "
         val label     = s"$comma${elem.label} = "
         val typeclass = elem.summon[Show]
-        val applyShow = '{ $typeclass.show(${ elem.dereference(a) }) }
+        val applyShow = '{ $typeclass.show(${ elem.get(a) }) }
         List(label, applyShow)
       }
       Expr.interpolatedString((s"${mirror.label}(" :: labeledValues) :+ ")"*)
@@ -53,4 +35,17 @@ object ShowMacro:
       new Show[A]:
         def show(a: A): String =
           ${ makeString('a) }
+    }
+
+  def deriveShowSum[A: Type](using Quotes)(mirror: Sum[quotes.type, A]): Expr[Show[A]] =
+    import quotes.reflect.*
+
+    '{
+      val instances = ${ mirror.deriveArray[Show]([t] => () => deriveShow[t]) }
+
+      new Show[A]:
+        def show(a: A): String =
+          val sumMirror = ${ mirror.mirrorExpr }
+          val ord       = sumMirror.ordinal(a)
+          instances(ord).asInstanceOf[Show[Any]].show(a)
     }

@@ -4,14 +4,14 @@ import scala.quoted.*
 import scala.deriving.Mirror
 import quotidian.syntax.*
 
-class MirrorElem[Q <: Quotes & Singleton, M, A](using val quotes: Q, val asType: Type[A])(
+class MirrorElem[Q <: Quotes, M, A](using val quotes: Q, val asType: Type[A])(
     val label: String,
     val typeRepr: quotes.reflect.TypeRepr,
     val symbol: quotes.reflect.Symbol
 ):
   import quotes.reflect.*
 
-  def dereference(parent: Expr[M]): Expr[A] =
+  def get(parent: Expr[M]): Expr[A] =
     dereference(parent.asTerm).asExprOf[A]
 
   def dereference(parent: quotes.reflect.Term): quotes.reflect.Term =
@@ -28,7 +28,7 @@ class MirrorElem[Q <: Quotes & Singleton, M, A](using val quotes: Q, val asType:
   def valueOfConstant: Option[A] =
     Type.valueOfConstant[A]
 
-sealed trait MacroMirror[Q <: Quotes & Singleton, A]:
+sealed trait MacroMirror[Q <: Quotes, A]:
   val quotes: Q
   val tpe: Type[A]
 
@@ -55,11 +55,30 @@ sealed trait MacroMirror[Q <: Quotes & Singleton, A]:
   def summonAll[F[_]: Type]: List[Expr[F[Any]]] =
     elems.map(_.summon[F]).asInstanceOf[List[Expr[F[Any]]]]
 
+  /** Returns an Expr[Array[F[_]]], first trying to summon an instance of `F[_]`
+    * for each element type, and then falling back to deriving an instance of
+    * `F[_]` for each element type.
+    *
+    * `val instances = ${ mirror.deriveArray[Eq]([t] => () => deriveEq[t]) }`
+    */
+  def deriveArray[F[_]: Type](
+      deriveFallback: [t] => () => Type[t] ?=> Expr[F[t]]
+  )(using Quotes): Expr[Array[F[Any]]] =
+    '{
+      ${
+        Expr.ofArray(
+          elemTypes.map { case '[t] =>
+            Expr.summon[F[t]].getOrElse(deriveFallback()(using Type.of[t]))
+          }*
+        )
+      }.asInstanceOf[Array[F[Any]]]
+    }
+
   protected def mirrorTypeLabel: String =
     this match
-      case _: MacroMirror.SingletonMacroMirror[Q, A] => "Singleton"
-      case _: MacroMirror.ProductMacroMirror[Q, A]   => "Product"
-      case _: MacroMirror.SumMacroMirror[Q, A]       => "Sum"
+      case _: MacroMirror.Singleton[Q, A] => "Singleton"
+      case _: MacroMirror.Product[Q, A]   => "Product"
+      case _: MacroMirror.Sum[Q, A]       => "Sum"
 
   override def toString: String =
     s"""${mirrorTypeLabel}MacroMirror(
@@ -71,11 +90,14 @@ sealed trait MacroMirror[Q <: Quotes & Singleton, A]:
 
 object MacroMirror:
 
-  abstract class SumMacroMirror[Q <: Quotes & Singleton, A](using
+  abstract class Sum[Q <: Quotes, A](using
       override val quotes: Q,
       override val tpe: Type[A]
   ) extends MacroMirror[Q, A]:
     import quotes.reflect.*
+
+    def mirrorExpr =
+      Expr.summon[Mirror.SumOf[A]].get
 
     def ordinal[T: Type]: Int =
       ordinal(TypeRepr.of[T])
@@ -85,7 +107,7 @@ object MacroMirror:
         case -1 => report.errorAndAbort(s"Type $repr is not a member of $monoType")
         case n  => n
 
-  abstract class ProductMacroMirror[Q <: Quotes & Singleton, A](using
+  abstract class Product[Q <: Quotes, A](using
       override val quotes: Q,
       override val tpe: Type[A]
   ) extends MacroMirror[Q, A]:
@@ -97,10 +119,10 @@ object MacroMirror:
         .call("apply", monoType.typeArgs, args.toList)
         .asExprOf[A]
 
-  abstract class SingletonMacroMirror[Q <: Quotes & Singleton, A](using
+  abstract class Singleton[Q <: Quotes, A](using
       override val quotes: Q,
       override val tpe: Type[A]
-  ) extends ProductMacroMirror[Q, A]:
+  ) extends MacroMirror.Product[Q, A]:
     import quotes.reflect.*
 
     override def construct(args: Seq[quotes.reflect.Term]): Expr[A] =
@@ -122,7 +144,7 @@ object MacroMirror:
                 type MirroredElemLabels = elemLabels
               }
             } =>
-          new SingletonMacroMirror[quotes.type, A]:
+          new MacroMirror.Singleton[quotes.type, A]:
             val label         = Type.valueOfConstant[label].get.asInstanceOf[String]
             val monoType      = TypeRepr.of[monoType]
             val elemLabels    = TypeRepr.of[elemLabels].tupleToList.map(_.valueAs[String])
@@ -136,7 +158,7 @@ object MacroMirror:
                 type MirroredElemLabels = elemLabels
               }
             } =>
-          new ProductMacroMirror[quotes.type, A]:
+          new MacroMirror.Product[quotes.type, A]:
             val label         = Type.valueOfConstant[label].get.asInstanceOf[String]
             val monoType      = TypeRepr.of[monoType]
             val elemLabels    = TypeRepr.of[elemLabels].tupleToList.map(_.valueAs[String])
@@ -150,7 +172,7 @@ object MacroMirror:
                 type MirroredElemLabels = elemLabels
               }
             } =>
-          new SumMacroMirror[quotes.type, A]:
+          new Sum[quotes.type, A]:
             val label         = Type.valueOfConstant[label].get.asInstanceOf[String]
             val monoType      = TypeRepr.of[monoType]
             val elemLabels    = TypeRepr.of[elemLabels].tupleToList.map(_.valueAs[String])
@@ -159,8 +181,8 @@ object MacroMirror:
       }
   end summon
 
-  def summonProduct[A: Type](using quotes: Quotes): ProductMacroMirror[quotes.type, A] =
+  def summonProduct[A: Type](using quotes: Quotes): Product[quotes.type, A] =
     import quotes.reflect.*
     summon[A] match
-      case Some(m: ProductMacroMirror[quotes.type, A]) => m
-      case _                                           => quotes.reflect.report.errorAndAbort(s"Cannot summon ProductMacroMirror[${TypeRepr.of[A].show}]")
+      case Some(m: MacroMirror.Product[quotes.type, A]) => m
+      case _                                            => quotes.reflect.report.errorAndAbort(s"Cannot summon ProductMacroMirror[${TypeRepr.of[A].show}]")
