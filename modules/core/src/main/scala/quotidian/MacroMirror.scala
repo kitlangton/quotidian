@@ -64,15 +64,12 @@ sealed trait MacroMirror[Q <: Quotes, A]:
   def deriveArray[F[_]: Type](
       deriveFallback: [t] => () => Type[t] ?=> Expr[F[t]]
   )(using Quotes): Expr[Array[F[Any]]] =
-    '{
-      ${
-        Expr.ofArray(
-          elemTypes.map { case '[t] =>
-            Expr.summon[F[t]].getOrElse(deriveFallback()(using Type.of[t]))
-          }*
-        )
-      }.asInstanceOf[Array[F[Any]]]
-    }
+    Expr.ofArray[F[Any]](
+      elemTypes.map { case '[t] =>
+        val fallback = deriveFallback()(using Type.of[t])
+        '{ ${ Expr.summon[F[t]].getOrElse(fallback) }.asInstanceOf[F[Any]] }
+      }*
+    )
 
   protected def mirrorTypeLabel: String =
     this match

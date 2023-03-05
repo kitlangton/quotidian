@@ -7,7 +7,7 @@ import scala.deriving.Mirror
 import scala.quoted.*
 
 object EqMacros:
-  def deriveEq[A: Type](using Quotes) =
+  def deriveEq[A: Type](using Quotes): Expr[Eq[A]] =
     import quotes.reflect.*
     MacroMirror.summon[A].getOrElse {
       report.errorAndAbort(s"${Type.show[A]} ${Expr.summon[Mirror.Of[A]]} must be a case class, enum, or sealed trait")
