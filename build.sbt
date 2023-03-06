@@ -24,8 +24,9 @@ lazy val core = (project in file("modules/core"))
   .settings(
     name := "quotidian",
     libraryDependencies ++= Seq(
-      "dev.zio" %% "zio-test"     % "2.0.9" % Test,
-      "dev.zio" %% "zio-test-sbt" % "2.0.9" % Test
+      "dev.zio"     %% "zio-test"     % "2.0.9" % Test,
+      "dev.zio"     %% "zio-test-sbt" % "2.0.9" % Test,
+      "com.lihaoyi" %% "pprint"       % "0.8.1"
     ),
     scalacOptions ++= Seq(
       "-deprecation",
