@@ -28,7 +28,7 @@ object MacroMirrorSpec extends ZIOSpecDefault:
         val result = MacroMirrorSpecMacro.constructProductTest[Job.Lump.type]()
         assertTrue(result == Job.Lump)
       },
-      test("refust to derive a mirror for primitive type") {
+      test("refuse to derive a mirror for primitive type") {
         val result = MacroMirrorSpecMacro.macroMirrorTest[Int]
         assertTrue(result == "Cannot summon Mirror.Of[scala.Int]")
       }

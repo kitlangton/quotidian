@@ -9,10 +9,29 @@ import scala.reflect.ClassTag
 
 extension (self: Expr.type)
 
+  /** Packs the given expressions into an Expr of an array.
+    *
+    * @example
+    *   {{{
+    * val result: Expr[Array[String]] = Expr.ofArray(Expr("Bongo"), Expr("Dingo"))
+    * // '{ Array("Bongo", "Dingo") }
+    *   }}}
+    */
   def ofArray[A: Type](using Quotes)(as: Expr[A]*): Expr[Array[A]] =
     '{ Array(${ Expr.ofSeq(as) }*)(using ${ Expr.summon[ClassTag[A]].get }) }
 
-  /** Creates an interpolated String Expr from a list of strings and expressions.
+  /** Creates an interpolated String Expr from the given String literals
+    * and Exprs.
+    *
+    * @example
+    *   {{{
+    * val nameExpr = Expr("Kit")
+    * val intExpr = Expr(33)
+    *
+    * val result: Expr[String] =
+    *   interpolatedString("My name is ", nameExpr, " and I am ", intExpr, " years old")
+    * // '{ s"My name is $nameExpr and I am $intExpr years old" }
+    *   }}}
     */
   def interpolatedString(using Quotes)(as: (String | Expr[?])*): Expr[String] =
     import quotes.reflect.*
@@ -143,8 +162,6 @@ extension (using Quotes)(self: quotes.reflect.TypeRepr)
     self.asType match
       case '[t *: ts]    => TypeRepr.of[t] :: TypeRepr.of[ts].tupleToList
       case '[EmptyTuple] => Nil
-
-//extension [A](using Quotes)(self: Expr[A])
 
 // Extractors
 

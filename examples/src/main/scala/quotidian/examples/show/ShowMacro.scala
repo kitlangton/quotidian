@@ -29,7 +29,9 @@ object ShowMacro:
         val applyShow = '{ $typeclass.show(${ elem.get(a) }) }
         List(label, applyShow)
       }
-      Expr.interpolatedString((s"${mirror.label}(" :: labeledValues) :+ ")"*)
+
+      if mirror.monoType.isSingleton then Expr(mirror.label)
+      else Expr.interpolatedString((s"${mirror.label}(" :: labeledValues) :+ ")"*)
 
     '{
       new Show[A]:

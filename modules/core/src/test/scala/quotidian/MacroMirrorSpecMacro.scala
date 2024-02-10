@@ -27,7 +27,9 @@ object MacroMirrorSpecMacro:
           case Varargs(args) => args
         val argTerms = argsList.map(_.asTerm)
         productMirror.construct(argTerms)
+
       case Some(otherMirror) =>
         report.errorAndAbort(s"`constructProductTest` can only be used with product types, but got $otherMirror")
+
       case None =>
         report.errorAndAbort(s"No MacroMirror found")
