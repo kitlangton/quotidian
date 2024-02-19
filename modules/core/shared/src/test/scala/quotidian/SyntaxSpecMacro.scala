@@ -3,7 +3,7 @@ import quotidian.syntax.*
 
 import scala.Console
 import MacroTestHelpers.*
-import quotidian.SyntaxSpecMacro.ExampleTraitLive.nullary
+import SyntaxSpecMacro.ExampleTraitLive.nullary
 
 object SyntaxSpecMacro:
 
@@ -69,7 +69,6 @@ object SyntaxSpecMacro:
         | result: ${result}
         """.stripMargin)
     println(method.paramSymss)
-    report.errorAndAbort("OH")
 
   def testTermCall(using ctx: Quotes): Unit =
     import ctx.reflect.*

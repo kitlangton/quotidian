@@ -1,5 +1,6 @@
 package quotidian.examples.show
 
+import quotidian.syntax.*
 import quotidian.MacroMirror
 import quotidian.MacroMirror.{Product, Sum}
 import scala.deriving.*
