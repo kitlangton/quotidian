@@ -1,6 +1,6 @@
 package quotidian
 
-import quotidian.syntax.*
+import quotidian.syntax.{*, given}
 
 import scala.compiletime.*
 import scala.deriving.Mirror

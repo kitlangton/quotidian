@@ -1,8 +1,8 @@
 package quotidian
 
+import quotidian.syntax.{*, given}
 import scala.quoted.*
 import scala.compiletime.*
-import quotidian.syntax.*
 
 import scala.deriving.Mirror
 

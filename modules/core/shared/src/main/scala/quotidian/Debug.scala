@@ -13,9 +13,10 @@ object Debug:
     val showTypeRepr   = typeRepr.show
     val prettyTypeRepr = pprint(typeRepr).toString
     val showExpr       = expr.show
-    val prettyTerm     = pprint(expr.asTerm.underlyingArgument).toString
-    val symbol         = typeRepr.typeSymbol
-    val info           = SymbolInfo.fromSymbol(symbol)
+
+    val prettyTerm = pprint(expr.asTerm.underlyingArgument).toString
+    val symbol     = typeRepr.typeSymbol
+    val info       = SymbolInfo.fromSymbol(symbol)
     val message =
       s"""${"EXPR".blue.underlined}
         |$showExpr

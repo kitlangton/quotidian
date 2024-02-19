@@ -14,34 +14,35 @@ inThisBuild(
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
-lazy val root = (project in file("."))
+lazy val root = (crossProject(JSPlatform, JVMPlatform) in file("."))
   .settings(
-    name := "quotidian"
+    name := "root"
   )
   .aggregate(core)
+  .dependsOn(core)
 
-lazy val core = (project in file("modules/core"))
+lazy val core = (crossProject(JSPlatform, JVMPlatform) in file("modules/core"))
   .settings(
     name := "quotidian",
     libraryDependencies ++= Seq(
-      "dev.zio"     %% "zio-test"     % "2.0.9" % Test,
-      "dev.zio"     %% "zio-test-sbt" % "2.0.9" % Test,
+      "dev.zio"     %% "zio-test"     % "2.1-RC1" % Test,
+      "dev.zio"     %% "zio-test-sbt" % "2.1-RC1" % Test,
       "com.lihaoyi" %% "pprint"       % "0.8.1"
     ),
     scalacOptions ++= Seq(
       "-deprecation",
-      "-explain",
       "-Xcheck-macros"
-//      "-Ycheck:all"
     )
   )
+  .enablePlugins(ScalaJSPlugin)
 
-lazy val examples = (project in file("examples"))
+lazy val examples = (crossProject(JSPlatform, JVMPlatform) in file("examples"))
   .settings(
     name := "quotidian-examples",
     libraryDependencies ++= Seq(
-      "dev.zio" %% "zio-test"     % "2.0.9" % Test,
-      "dev.zio" %% "zio-test-sbt" % "2.0.9" % Test
+      "dev.zio" %% "zio-test"     % "2.1-RC1" % Test,
+      "dev.zio" %% "zio-test-sbt" % "2.1-RC1" % Test
     )
   )
   .dependsOn(core)
+  .enablePlugins(ScalaJSPlugin)

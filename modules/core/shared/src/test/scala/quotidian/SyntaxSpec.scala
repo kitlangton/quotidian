@@ -1,0 +1,2 @@
+object SyntaxSpec:
+  SyntaxSpecMacro.spec
