@@ -4,6 +4,7 @@ import scala.annotation.tailrec
 import scala.deriving.Mirror
 import scala.quoted.*
 import scala.reflect.ClassTag
+import scala.annotation.targetName
 
 /////////////////////
 // Expr Extensions //
@@ -21,6 +22,12 @@ extension (self: Expr.type)
     */
   def ofArray[A: Type](using Quotes)(as: Expr[A]*): Expr[Array[A]] =
     '{ Array(${ Expr.ofSeq(as) }*)(using ${ Expr.summon[ClassTag[A]].get }) }
+
+  def ofMap[K: Type, V: Type](using Quotes)(as: (Expr[K], Expr[V])*): Expr[Map[K, V]] =
+    '{ Map(${ Expr.ofSeq(as.map { case (k, v) => '{ $k -> $v } }) }*) }
+
+  def ofMap[V: Type](using Quotes)(as: Seq[(String, Expr[V])]): Expr[Map[String, V]] =
+    '{ Map(${ Expr.ofSeq(as.map { case (k, v) => '{ ${ Expr(k) } -> $v } }) }*) }
 
   /** Creates an interpolated String Expr from the given String literals and
     * Exprs.
@@ -49,6 +56,25 @@ extension (self: Expr.type)
 extension [A: Type](using Quotes)(self: Expr[A])
   def cast[To: Type]: Expr[To] =
     '{ $self.asInstanceOf[To] }
+
+///////////////////////////
+// Refinement Extensions //
+///////////////////////////
+extension (using Quotes)(self: quotes.reflect.Refinement.type)
+  def of(
+      base: quotes.reflect.TypeRepr, //
+      refinements: Seq[(String, quotes.reflect.TypeRepr)]
+  ): quotes.reflect.TypeRepr =
+    import quotes.reflect.*
+    refinements.foldLeft(base) { case (acc, (name, tpe)) =>
+      Refinement(acc, name, tpe)
+    }
+
+  def of[Base: Type](
+      refinements: Seq[(String, quotes.reflect.TypeRepr)]
+  ): quotes.reflect.TypeRepr =
+    import quotes.reflect.*
+    Refinement.of(TypeRepr.of[Base], refinements)
 
 /////////////////////////
 // TypeRepr Extensions //
@@ -176,6 +202,11 @@ extension (using Quotes)(self: quotes.reflect.Term)
   ): quotes.reflect.Term =
     import quotes.reflect.*
     Select(self, symbol).appliedToTypes(targs).appliedToArgs(args)
+
+  def copy(labeledValues: (String, quotes.reflect.Term)*): quotes.reflect.Term =
+    import quotes.reflect.*
+    val namedArgs = labeledValues.map((name, value) => NamedArg(name, value)).toList
+    Select.overloaded(self, "copy", self.tpe.typeArgs, namedArgs.toList)
 
   def call(name: String): quotes.reflect.Term =
     TermUtils.callImpl(self, name, List.empty[quotes.reflect.TypeRepr], List.empty[quotes.reflect.Term])

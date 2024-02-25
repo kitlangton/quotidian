@@ -11,7 +11,7 @@ object ShowMacro:
   def deriveShow[A: Type](using Quotes): Expr[Show[A]] =
     import quotes.reflect.*
     val mirror = MacroMirror.summon[A].getOrElse {
-      report.throwError(s"${Type.show[A]} must be a case class, enum, or sealed trait.")
+      report.errorAndAbort(s"${Type.show[A]} must be a case class, enum, or sealed trait.")
     }
     mirror match
       case m: Product[?, ?] => deriveShowProduct[A](m)

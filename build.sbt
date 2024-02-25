@@ -18,8 +18,7 @@ lazy val root = (crossProject(JSPlatform, JVMPlatform) in file("."))
   .settings(
     name := "root"
   )
-  .aggregate(core)
-  .dependsOn(core)
+  .aggregate(core, examples)
 
 lazy val core = (crossProject(JSPlatform, JVMPlatform) in file("modules/core"))
   .settings(
@@ -34,15 +33,26 @@ lazy val core = (crossProject(JSPlatform, JVMPlatform) in file("modules/core"))
       "-Xcheck-macros"
     )
   )
+  .jsSettings(
+    scalaJSLinkerConfig ~= { _.withModuleKind(ModuleKind.ESModule) }
+  )
   .enablePlugins(ScalaJSPlugin)
 
-lazy val examples = (crossProject(JSPlatform, JVMPlatform) in file("examples"))
+lazy val examples = (crossProject(JVMPlatform) in file("examples"))
   .settings(
     name := "quotidian-examples",
     libraryDependencies ++= Seq(
       "dev.zio" %% "zio-test"     % "2.1-RC1" % Test,
       "dev.zio" %% "zio-test-sbt" % "2.1-RC1" % Test
+    ),
+    scalacOptions ++= Seq(
+      "-deprecation"
+      // "-Xcheck-macros"
     )
   )
+  // .jsSettings(
+  //   scalaJSUseMainModuleInitializer := true,
+  //   scalaJSLinkerConfig ~= { _.withModuleKind(ModuleKind.ESModule) }
+  // )
   .dependsOn(core)
-  .enablePlugins(ScalaJSPlugin)
+// .enablePlugins(ScalaJSPlugin)
