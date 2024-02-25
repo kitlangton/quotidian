@@ -7,7 +7,6 @@ import quoted.*
 import quotidian.examples.lens.Lens.make
 
 object LensMacros:
-
   def makeLensImpl[S: Type, A: Type](selectorExpr: Expr[S => A])(using Quotes): Expr[Lens[S, A]] =
     import quotes.reflect.*
     selectorExpr.asTerm.underlyingArgument match

@@ -1,21 +1,17 @@
 package quotidian.examples.lens
 
-import quotidian.examples.lens.Person.age
-
-case class Person(name: String, age: Int)
+case class Person(name: String, age: Int, isAlive: Boolean)
 
 object Person:
-  val lenses = LensMacros.makeLenses[Person]
-  val age    = lenses.age
-  val name   = lenses.name
+  val lens = LensMacros.makeLenses[Person]
 
 @main
 def example(): Unit =
-  val person = Person("Alice", 42)
+  val person = Person("Alice", 42, true)
   println(s"Person: $person")
 
-  val name = Person.name.get(person)
+  val name = Person.lens.name.get(person)
   println(s"Name: $name")
 
-  val aged = Person.age.modify(person)(_ + 100)
+  val aged = Person.lens.age.modify(person)(_ + 100)
   println(s"Aged: $aged")
