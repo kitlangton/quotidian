@@ -68,7 +68,7 @@ private trait LensesFor[A]:
 private object LensesFor:
   transparent inline given derived[A]: LensesFor[A] = ${ lensesForImpl[A] }
 
-  def lensesForImpl[A: Type](using Quotes) =
+  private def lensesForImpl[A: Type](using Quotes) =
     import quotes.reflect.*
     val lensesExpr = LensMacros.makeLensesImpl[A]
     lensesExpr.asTerm.tpe.asType match
@@ -81,8 +81,5 @@ private object LensesFor:
       def lenses: Lenses = lenses0
 
 trait DeriveLenses[A]:
-  type Self = this.type
-
-  transparent inline given conversion(using lenses: LensesFor[A]): Conversion[Self, lenses.Out] =
-    new Conversion[Self, lenses.Out]:
-      def apply(a: Self): lenses.Out = lenses.lenses
+  given conversion(using lenses: LensesFor[A]): Conversion[this.type, lenses.Out] =
+    _ => lenses.lenses
