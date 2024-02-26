@@ -82,6 +82,14 @@ extension (using Quotes)(self: quotes.reflect.Refinement.type)
 
 extension (using Quotes)(self: quotes.reflect.TypeRepr.type)
 
+  def companionOf[A: Type]: quotes.reflect.TypeRepr =
+    import quotes.reflect.*
+    TypeRepr.of[A].typeSymbol.companionModule.typeRef
+
+  def companionClassOf[A: Type]: quotes.reflect.TypeRepr =
+    import quotes.reflect.*
+    TypeRepr.of[A].typeSymbol.companionClass.typeRef
+
   def fieldTypes[A: Type]: List[quotes.reflect.TypeRepr] =
     Expr.summon[Mirror.ProductOf[A]].get match
       case '{ $p: Mirror.ProductOf[A] { type MirroredElemTypes = tpes } } =>
@@ -157,6 +165,7 @@ extension (using Quotes)(self: quotes.reflect.Symbol)
     import quotes.reflect.*
     self.termRef.widenTermRefByName match
       case MethodType(_, _, res) => res
+      case PolyType(_, _, res)   => res
       case other                 => other
 
   def isPublic: Boolean =

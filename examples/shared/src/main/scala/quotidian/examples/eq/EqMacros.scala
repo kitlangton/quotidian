@@ -22,7 +22,10 @@ object EqMacros:
       mirror.elems
         .map { elem =>
           import elem.given
-          '{ ${ elem.summon[Eq] }.eqv(${ elem.get(x) }, ${ elem.get(y) }) }
+          val eq    = elem.summon[Eq]
+          val elemX = elem.get(x)
+          val elemY = elem.get(y)
+          '{ $eq.eqv($elemX, $elemY) }
         }
         .reduceLeftOption((x, y) => '{ $x && $y })
         .getOrElse(Expr(true))

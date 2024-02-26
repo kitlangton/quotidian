@@ -42,12 +42,13 @@ lazy val examples = (crossProject(JVMPlatform) in file("examples"))
   .settings(
     name := "quotidian-examples",
     libraryDependencies ++= Seq(
+      "dev.zio" %% "zio"          % "2.1-RC1",
       "dev.zio" %% "zio-test"     % "2.1-RC1" % Test,
       "dev.zio" %% "zio-test-sbt" % "2.1-RC1" % Test
     ),
     scalacOptions ++= Seq(
-      "-deprecation"
-      // "-Xcheck-macros"
+      "-deprecation",
+      "-Xcheck-macros"
     )
   )
   // .jsSettings(

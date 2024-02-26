@@ -27,7 +27,7 @@ object LensMacros:
         }
       case other => report.errorAndAbort(s"Expected a selector of the form `s => a`, but got: ${other}")
 
-  transparent inline def makeLenses[S] = ${ makeLensesImpl[S] }
+  implicit transparent inline def makeLenses[S]: Any = ${ makeLensesImpl[S] }
 
   def makeLensesImpl[S: Type](using Quotes): Expr[Any] =
     import quotes.reflect.*
@@ -50,3 +50,39 @@ object LensMacros:
     refinedType.asType match
       case '[t] =>
         '{ new LensSelector[S]($lensMap).asInstanceOf[t] }
+
+  def refinedTypeFor[S: Type](using Quotes): quotes.reflect.TypeRepr =
+    import quotes.reflect.*
+    val productMirror = MacroMirror.summonProduct[S]
+    Refinement
+      .of[LensSelector[S]](
+        productMirror.elemsWithTypes.map { case (elem, '[a]) =>
+          elem.label -> TypeRepr.of[Lens[S, a]]
+        }
+      )
+
+private trait LensesFor[A]:
+  type Out
+  def lenses: Out
+
+private object LensesFor:
+  transparent inline given derived[A]: LensesFor[A] = ${ lensesForImpl[A] }
+
+  def lensesForImpl[A: Type](using Quotes) =
+    import quotes.reflect.*
+    val lensesExpr = LensMacros.makeLensesImpl[A]
+    lensesExpr.asTerm.tpe.asType match
+      case '[t] =>
+        '{ LensesFor.make[A, t]($lensesExpr.asInstanceOf[t]) }
+
+  private def make[A, Lenses](lenses0: Lenses): LensesFor[A] { type Out = Lenses } =
+    new LensesFor[A]:
+      type Out = Lenses
+      def lenses: Lenses = lenses0
+
+trait DeriveLenses[A]:
+  type Self = this.type
+
+  transparent inline given conversion(using lenses: LensesFor[A]): Conversion[Self, lenses.Out] =
+    new Conversion[Self, lenses.Out]:
+      def apply(a: Self): lenses.Out = lenses.lenses
