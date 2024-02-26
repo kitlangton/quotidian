@@ -1,11 +1,13 @@
 package quotidian.examples.lens
 
 case class Person(name: String, age: Int, isAlive: Boolean)
-object Person extends DeriveLenses[Person]
+
+object Person extends DeriveLenses
 
 @main
 def example(): Unit =
-  val person  = Person("Alice", 42, true)
+  val person = Person("Alice", 42, true)
+
   val name    = Person.name.get(person)
   val age     = Person.age.get(person)
   val isAlive = Person.isAlive.get(person)

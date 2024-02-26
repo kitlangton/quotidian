@@ -5,6 +5,7 @@ import quotidian.syntax.*
 
 import quoted.*
 import quotidian.examples.lens.Lens.make
+import scala.annotation.meta.companionClass
 
 object LensMacros:
   def makeLensImpl[S: Type, A: Type](selectorExpr: Expr[S => A])(using Quotes): Expr[Lens[S, A]] =
@@ -73,13 +74,27 @@ private object LensesFor:
     val lensesExpr = LensMacros.makeLensesImpl[A]
     lensesExpr.asTerm.tpe.asType match
       case '[t] =>
-        '{ LensesFor.make[A, t]($lensesExpr.asInstanceOf[t]) }
+        '{
+          new LensesFor[A]:
+            type Out = t
+            def lenses: t = $lensesExpr.asInstanceOf[t]
+        }
 
-  private def make[A, Lenses](lenses0: Lenses): LensesFor[A] { type Out = Lenses } =
-    new LensesFor[A]:
-      type Out = Lenses
-      def lenses: Lenses = lenses0
-
-trait DeriveLenses[A]:
-  given conversion(using lenses: LensesFor[A]): Conversion[this.type, lenses.Out] =
+trait DeriveLenses:
+  given conversion(using cc: CompanionClass[this.type], lenses: LensesFor[cc.Out]): Conversion[this.type, lenses.Out] =
     _ => lenses.lenses
+
+trait CompanionClass[A]:
+  type Out
+
+object CompanionClass:
+  transparent inline given [A]: CompanionClass[A] = ${ companionImpl[A] }
+
+def companionImpl[A: Type](using Quotes) =
+  import quotes.reflect.*
+  TypeRepr.companionClassOf[A].asType match
+    case '[t] =>
+      '{
+        new CompanionClass[A]:
+          type Out = t
+      }
