@@ -80,21 +80,30 @@ private object LensesFor:
             def lenses: t = $lensesExpr.asInstanceOf[t]
         }
 
+trait Cool[A]
+
 trait DeriveLenses:
-  given conversion(using cc: CompanionClass[this.type], lenses: LensesFor[cc.Out]): Conversion[this.type, lenses.Out] =
+
+  given conversion(using
+      cc: CompanionClass[this.type],
+      lenses: LensesFor[cc.Type]
+  ): Conversion[this.type, lenses.Out] =
     _ => lenses.lenses
 
 trait CompanionClass[A]:
-  type Out
+  type Type
 
 object CompanionClass:
   transparent inline given [A]: CompanionClass[A] = ${ companionImpl[A] }
 
 def companionImpl[A: Type](using Quotes) =
   import quotes.reflect.*
+  val companionClass = TypeRepr.companionClassOf[A]
+  if companionClass.typeSymbol.isNoSymbol then report.errorAndAbort(s"No companion class found for ${Type.show[A]}")
+
   TypeRepr.companionClassOf[A].asType match
     case '[t] =>
       '{
         new CompanionClass[A]:
-          type Out = t
+          type Type = t
       }

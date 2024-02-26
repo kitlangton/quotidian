@@ -93,6 +93,6 @@ private object AccessorsFor:
 trait DeriveAccessors[A]:
   type Self = this.type
 
-  transparent inline given conversion(using Accessors: AccessorsFor[A]): Conversion[Self, Accessors.Out] =
+  given conversion(using Accessors: AccessorsFor[A]): Conversion[Self, Accessors.Out] =
     new Conversion[Self, Accessors.Out]:
       def apply(a: Self): Accessors.Out = Accessors.Accessors
