@@ -14,11 +14,17 @@ inThisBuild(
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
-lazy val root = (crossProject(JSPlatform, JVMPlatform) in file("."))
+lazy val root = (project in file("."))
   .settings(
-    name := "root"
+    name           := "root",
+    publish / skip := true
   )
-  .aggregate(core, examples)
+  .aggregate(
+    core.js,
+    core.jvm,
+    examples.js,
+    examples.jvm
+  )
 
 lazy val core = (crossProject(JSPlatform, JVMPlatform) in file("modules/core"))
   .settings(
@@ -40,7 +46,8 @@ lazy val core = (crossProject(JSPlatform, JVMPlatform) in file("modules/core"))
 
 lazy val examples = (crossProject(JVMPlatform) in file("examples"))
   .settings(
-    name := "quotidian-examples",
+    name           := "quotidian-examples",
+    publish / skip := true,
     libraryDependencies ++= Seq(
       "dev.zio" %% "zio"          % "2.1-RC1",
       "dev.zio" %% "zio-test"     % "2.1-RC1" % Test,
