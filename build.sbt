@@ -46,6 +46,7 @@ ThisBuild / githubWorkflowPublish := Seq(
 lazy val root = crossProject(JSPlatform, JVMPlatform)
   .in(file("."))
   .settings(
+    name           := "root",
     publish / skip := true
   )
   .aggregate(
@@ -69,7 +70,6 @@ lazy val core = (crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Pure)
   .jsSettings(
     scalaJSLinkerConfig ~= { _.withModuleKind(ModuleKind.ESModule) }
   )
-  .enablePlugins(ScalaJSPlugin)
 
 lazy val examples = (crossProject(JVMPlatform).crossType(CrossType.Pure) in file("examples"))
   .settings(
