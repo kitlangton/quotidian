@@ -14,7 +14,37 @@ inThisBuild(
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
-lazy val root = (project in file("."))
+////////////////////////
+// sbt-github-actions //
+////////////////////////
+ThisBuild / githubWorkflowJavaVersions += JavaSpec.temurin("17")
+
+ThisBuild / githubWorkflowTargetTags ++= Seq("v*")
+ThisBuild / githubWorkflowPublishTargetBranches :=
+  Seq(
+    RefPredicate.StartsWith(Ref.Tag("v")),
+    RefPredicate.Equals(Ref.Branch("main"))
+  )
+
+ThisBuild / githubWorkflowPublish := Seq(
+  WorkflowStep.Sbt(
+    commands = List("ci-release"),
+    name = Some("Publish project"),
+    env = Map(
+      "PGP_PASSPHRASE"    -> "${{ secrets.PGP_PASSPHRASE }}",
+      "PGP_SECRET"        -> "${{ secrets.PGP_SECRET }}",
+      "SONATYPE_PASSWORD" -> "${{ secrets.SONATYPE_PASSWORD }}",
+      "SONATYPE_USERNAME" -> "${{ secrets.SONATYPE_USERNAME }}"
+    )
+  )
+)
+
+/////////////////////////
+// Project Definitions //
+/////////////////////////
+
+lazy val root = project
+  .in(file("."))
   .settings(
     name           := "root",
     publish / skip := true
@@ -22,11 +52,10 @@ lazy val root = (project in file("."))
   .aggregate(
     core.js,
     core.jvm,
-    examples.js,
     examples.jvm
   )
 
-lazy val core = (crossProject(JSPlatform, JVMPlatform) in file("modules/core"))
+lazy val core = (crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Pure) in file("modules/core"))
   .settings(
     name := "quotidian",
     libraryDependencies ++= Seq(
@@ -44,7 +73,7 @@ lazy val core = (crossProject(JSPlatform, JVMPlatform) in file("modules/core"))
   )
   .enablePlugins(ScalaJSPlugin)
 
-lazy val examples = (crossProject(JVMPlatform) in file("examples"))
+lazy val examples = (crossProject(JVMPlatform).crossType(CrossType.Pure) in file("examples"))
   .settings(
     name           := "quotidian-examples",
     publish / skip := true,
@@ -58,9 +87,9 @@ lazy val examples = (crossProject(JVMPlatform) in file("examples"))
       "-Xcheck-macros"
     )
   )
-  // .jsSettings(
-  //   scalaJSUseMainModuleInitializer := true,
-  //   scalaJSLinkerConfig ~= { _.withModuleKind(ModuleKind.ESModule) }
-  // )
+//  .jsSettings(
+//    scalaJSUseMainModuleInitializer := true,
+//    scalaJSLinkerConfig ~= { _.withModuleKind(ModuleKind.ESModule) }
+//  )
   .dependsOn(core)
-// .enablePlugins(ScalaJSPlugin)
+//  .enablePlugins(ScalaJSPlugin)
