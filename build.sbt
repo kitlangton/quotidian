@@ -43,16 +43,14 @@ ThisBuild / githubWorkflowPublish := Seq(
 // Project Definitions //
 /////////////////////////
 
-lazy val root = project
+lazy val root = crossProject(JSPlatform, JVMPlatform)
   .in(file("."))
   .settings(
-    name           := "root",
     publish / skip := true
   )
   .aggregate(
-    core.js,
-    core.jvm,
-    examples.jvm
+    core,
+    examples
   )
 
 lazy val core = (crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Pure) in file("modules/core"))
