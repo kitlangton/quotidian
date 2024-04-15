@@ -152,6 +152,15 @@ object MacroMirror:
   ) extends MacroMirror[Q, A]:
     import quotes.reflect.*
 
+    private def extractTypeArgs(actual: TypeRepr): List[TypeRepr] =
+      val sym = TypeRepr.of[A].typeSymbol
+
+      if actual.derivesFrom(sym) then actual.baseType(sym).typeArgs
+      else
+        // Fallback to the original implementation
+        // TODO: Maybe err out?
+        actual.widenTermRefByName.typeArgs
+
     def construct(args: Seq[quotes.reflect.Term]): Expr[A] =
       Term
         .companionOf(monoType)
@@ -169,14 +178,14 @@ object MacroMirror:
     def copy(original: Expr[A], mirrorElemsAndValues: (MirrorElem[quotes.type, A, ?], Expr[?])*): Expr[A] =
       val namedArgs = mirrorElemsAndValues.map((elem, value) => NamedArg(elem.label, value.asTerm))
       Select
-        .overloaded(original.asTerm, "copy", original.asTerm.tpe.typeArgs, namedArgs.toList)
+        .overloaded(original.asTerm, "copy", extractTypeArgs(original.asTerm.tpe), namedArgs.toList)
         .asExprOf[A]
 
     @targetName("copyWithLabels")
     def copy(original: Expr[A], elemLabelsAndValues: (String, Expr[?])*): Expr[A] =
       val namedArgs = elemLabelsAndValues.map((label, value) => NamedArg(label, value.asTerm)).toList
       Select
-        .overloaded(original.asTerm, "copy", original.asTerm.tpe.typeArgs, namedArgs)
+        .overloaded(original.asTerm, "copy", extractTypeArgs(original.asTerm.tpe), namedArgs)
         .asExprOf[A]
 
     def toArrayExpr(a: Expr[A]): Expr[Array[Any]] =
