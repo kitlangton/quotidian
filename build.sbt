@@ -43,7 +43,7 @@ ThisBuild / githubWorkflowPublish := Seq(
 // Project Definitions //
 /////////////////////////
 
-lazy val root = crossProject(JSPlatform, JVMPlatform)
+lazy val root = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .in(file("."))
   .settings(
     name           := "root",
@@ -54,7 +54,7 @@ lazy val root = crossProject(JSPlatform, JVMPlatform)
     examples
   )
 
-lazy val core = (crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Pure) in file("modules/core"))
+lazy val core = (crossProject(JSPlatform, JVMPlatform, NativePlatform).crossType(CrossType.Pure) in file("modules/core"))
   .settings(
     name := "quotidian",
     libraryDependencies ++= Seq(
