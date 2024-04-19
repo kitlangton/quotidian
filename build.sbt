@@ -54,31 +54,32 @@ lazy val root = crossProject(JSPlatform, JVMPlatform, NativePlatform)
     examples
   )
 
-lazy val core = (crossProject(JSPlatform, JVMPlatform, NativePlatform).crossType(CrossType.Pure) in file("modules/core"))
-  .settings(
-    name := "quotidian",
-    libraryDependencies ++= Seq(
-      "dev.zio"     %% "zio-test"     % "2.1-RC1" % Test,
-      "dev.zio"     %% "zio-test-sbt" % "2.1-RC1" % Test,
-      "com.lihaoyi" %% "pprint"       % "0.8.1"
-    ),
-    scalacOptions ++= Seq(
-      "-deprecation",
-      "-Xcheck-macros"
+lazy val core =
+  (crossProject(JSPlatform, JVMPlatform, NativePlatform).crossType(CrossType.Pure) in file("modules/core"))
+    .settings(
+      name := "quotidian",
+      libraryDependencies ++= Seq(
+        "dev.zio"     %% "zio-test"     % "2.1.0-RC2" % Test,
+        "dev.zio"     %% "zio-test-sbt" % "2.1.0-RC2" % Test,
+        "com.lihaoyi" %% "pprint"       % "0.8.1"
+      ),
+      scalacOptions ++= Seq(
+        "-deprecation",
+        "-Xcheck-macros"
+      )
     )
-  )
-  .jsSettings(
-    scalaJSLinkerConfig ~= { _.withModuleKind(ModuleKind.ESModule) }
-  )
+    .jsSettings(
+      scalaJSLinkerConfig ~= { _.withModuleKind(ModuleKind.ESModule) }
+    )
 
 lazy val examples = (crossProject(JVMPlatform).crossType(CrossType.Pure) in file("examples"))
   .settings(
     name           := "quotidian-examples",
     publish / skip := true,
     libraryDependencies ++= Seq(
-      "dev.zio" %% "zio"          % "2.1-RC1",
-      "dev.zio" %% "zio-test"     % "2.1-RC1" % Test,
-      "dev.zio" %% "zio-test-sbt" % "2.1-RC1" % Test
+      "dev.zio" %% "zio"          % "2.1.0-RC2",
+      "dev.zio" %% "zio-test"     % "2.1.0-RC2" % Test,
+      "dev.zio" %% "zio-test-sbt" % "2.1.0-RC2" % Test
     ),
     scalacOptions ++= Seq(
       "-deprecation",
