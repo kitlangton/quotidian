@@ -59,8 +59,8 @@ lazy val core =
     .settings(
       name := "quotidian",
       libraryDependencies ++= Seq(
-        "dev.zio"     %% "zio-test"     % "2.1.3" % Test,
-        "dev.zio"     %% "zio-test-sbt" % "2.1.3" % Test,
+        "dev.zio"     %% "zio-test"     % "2.1.4" % Test,
+        "dev.zio"     %% "zio-test-sbt" % "2.1.4" % Test,
         "com.lihaoyi" %% "pprint"       % "0.9.0"
       ),
       scalacOptions ++= Seq(
@@ -77,9 +77,9 @@ lazy val examples = (crossProject(JVMPlatform).crossType(CrossType.Pure) in file
     name           := "quotidian-examples",
     publish / skip := true,
     libraryDependencies ++= Seq(
-      "dev.zio" %% "zio"          % "2.1.3",
-      "dev.zio" %% "zio-test"     % "2.1.3" % Test,
-      "dev.zio" %% "zio-test-sbt" % "2.1.3" % Test
+      "dev.zio" %% "zio"          % "2.1.4",
+      "dev.zio" %% "zio-test"     % "2.1.4" % Test,
+      "dev.zio" %% "zio-test-sbt" % "2.1.4" % Test
     ),
     scalacOptions ++= Seq(
       "-deprecation",
