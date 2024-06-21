@@ -21,13 +21,16 @@ extension (self: Expr.type)
     *   }}}
     */
   def ofArray[A: Type](using Quotes)(as: Expr[A]*): Expr[Array[A]] =
-    '{ Array(${ Expr.ofSeq(as) }*)(using ${ Expr.summon[ClassTag[A]].get }) }
+    '{ Array(${ Varargs(as) }*)(using ${ Expr.summon[ClassTag[A]].get }) }
 
   def ofMap[K: Type, V: Type](using Quotes)(as: (Expr[K], Expr[V])*): Expr[Map[K, V]] =
-    '{ Map(${ Expr.ofSeq(as.map { case (k, v) => '{ $k -> $v } }) }*) }
+    '{ Map(${ Varargs(as.map { case (k, v) => '{ $k -> $v } }) }*) }
 
   def ofMap[V: Type](using Quotes)(as: Seq[(String, Expr[V])]): Expr[Map[String, V]] =
-    '{ Map(${ Expr.ofSeq(as.map { case (k, v) => '{ ${ Expr(k) } -> $v } }) }*) }
+    '{ Map(${ Varargs(as.map { case (k, v) => '{ ${ Expr(k) } -> $v } }) }*) }
+
+  def ofVector[A: Type](using Quotes)(as: Expr[A]*): Expr[Vector[A]] =
+    '{ Vector(${ Varargs(as) }*) }
 
   /** Creates an interpolated String Expr from the given String literals and
     * Exprs.

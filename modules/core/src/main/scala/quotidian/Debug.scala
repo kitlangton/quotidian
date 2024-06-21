@@ -1,10 +1,48 @@
 package quotidian
 
 import scala.quoted.*
+import quotidian.StringUtils.*
+
+object Report:
+  def debug(using Quotes)(tree: quotes.reflect.Tree): Unit =
+    import quotes.reflect.*
+    val prettyTerm = pprint(tree).toString
+    report.errorAndAbort {
+      s"""
+${"SHOW".blue.underlined}
+${tree.show}
+
+${"TREE".blue.underlined}
+$prettyTerm
+"""
+    }
 
 object Debug:
 
   inline def debug[A](inline expr: A): A = ${ debugImpl('expr) }
+
+  // def prettyPrint(using Quotes)(tree: quotes.reflect.Tree): String =
+  //   import quotes.reflect.*
+
+  //   val b = new StringBuilder
+
+  //   def render(tree: Tree, indent: Int = 0): Unit =
+  //     tree match
+  //       // Ident("name")
+  //       case Ident(name) =>
+  //         b.append(s"Ident($name)")
+
+  //       case Select(tree, name) =>
+  //         b.append(s"Select(${render(tree)}, $name)")
+
+  //       case Apply(func, args) =>
+  //         b.append(s"Apply(${render(func)}, ${args.map(render).mkString(", ")})")
+
+  //       case ApplyInfix(left, op, right) =>
+  //         b.append(s"ApplyInfix(${render(left)}, $op, ${render(right)})")
+
+  //       case Literal(value) =>
+  //         b.append(s"Literal($value)")
 
   def debugImpl[A: Type](expr: Expr[A])(using Quotes): Expr[A] =
     import quotes.reflect.*
@@ -27,7 +65,6 @@ object Debug:
         |${pprint(info)}
         |""".stripMargin
     report.errorAndAbort(message)
-    expr
 
   inline def debugWithType[A](inline expr: A): A = ${ debugWithTypeImpl('expr) }
 
@@ -54,13 +91,6 @@ object Debug:
         |""".stripMargin
     report.errorAndAbort(message)
     expr
-
-  extension (self: String) //
-    private def blue       = Console.BLUE + self + Console.RESET
-    private def red        = Console.RED + self + Console.RESET
-    private def cyan       = Console.CYAN + self + Console.RESET
-    private def bold       = Console.BOLD + self + Console.RESET
-    private def underlined = Console.UNDERLINED + self + Console.RESET
 
 final case class SymbolInfo(
     fullName: String,
