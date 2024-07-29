@@ -171,7 +171,7 @@ object MacroMirror:
       val terms = elems.zipWithIndex.map((elem, i) => //
         elem.asType match
           case '[t] =>
-            '{ $args(${ Expr(i) }).asInstanceOf[t] }.asTerm,
+            '{ $args(${ Expr(i) }).asInstanceOf[t] }.asTerm
       )
       construct(terms)
 
