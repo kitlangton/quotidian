@@ -1,10 +1,9 @@
 package quotidian.syntax
 
-import scala.annotation.tailrec
+import scala.annotation.{tailrec, targetName}
 import scala.deriving.Mirror
 import scala.quoted.*
 import scala.reflect.ClassTag
-import scala.annotation.targetName
 
 /////////////////////
 // Expr Extensions //

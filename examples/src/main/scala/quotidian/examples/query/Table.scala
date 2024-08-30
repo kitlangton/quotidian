@@ -1,6 +1,7 @@
 package quotidian.examples.query
 import quotidian.*
 import quotidian.syntax.*
+
 import scala.quoted.*
 
 trait Record extends Selectable:

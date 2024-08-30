@@ -1,10 +1,10 @@
 package quotidian
 
 import quotidian.syntax.{*, given}
-import scala.quoted.*
-import scala.compiletime.*
 
+import scala.compiletime.*
 import scala.deriving.Mirror
+import scala.quoted.*
 
 object DeriveFromExpr:
   inline def derived[A]: FromExpr[A] = ${ deriveImpl[A] }

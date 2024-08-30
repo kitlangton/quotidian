@@ -1,8 +1,8 @@
 package quotidian.examples.show
 
-import Show.*
-
 import scala.deriving.Mirror
+
+import Show.*
 
 final case class Person(name: String, age: Int) derives Show
 final case class Pet(name: String, bones: Int, owner: Option[Person]) derives Show

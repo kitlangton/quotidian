@@ -1,9 +1,9 @@
-import scala.quoted.*
+import MacroTestHelpers.*
+import SyntaxSpecMacro.ExampleTraitLive.nullary
 import quotidian.syntax.*
 
 import scala.Console
-import MacroTestHelpers.*
-import SyntaxSpecMacro.ExampleTraitLive.nullary
+import scala.quoted.*
 
 object SyntaxSpecMacro:
 

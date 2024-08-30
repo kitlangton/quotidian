@@ -1,11 +1,12 @@
 package quotidian.examples.lens
 
 import quotidian.*
+import quotidian.examples.lens.Lens.make
 import quotidian.syntax.*
 
-import quoted.*
-import quotidian.examples.lens.Lens.make
 import scala.annotation.meta.companionClass
+
+import quoted.*
 
 object LensMacros:
   def makeLensImpl[S: Type, A: Type](selectorExpr: Expr[S => A])(using Quotes): Expr[Lens[S, A]] =

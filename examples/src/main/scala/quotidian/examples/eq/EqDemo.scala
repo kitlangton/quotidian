@@ -1,8 +1,8 @@
 package quotidian.examples.eq
 
-import Eq.*
-
 import scala.deriving.Mirror
+
+import Eq.*
 
 final case class Person(name: String, age: Int) derives Eq
 final case class Pet(name: String, bones: Int, owner: Option[Person]) derives Eq

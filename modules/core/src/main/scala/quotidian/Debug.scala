@@ -1,7 +1,8 @@
 package quotidian
 
-import scala.quoted.*
 import quotidian.StringUtils.*
+
+import scala.quoted.*
 
 object Report:
   def debug(using Quotes)(tree: quotes.reflect.Tree): Unit =

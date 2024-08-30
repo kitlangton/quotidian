@@ -8,7 +8,9 @@ inThisBuild(
     licenses       := List("Apache-2.0" -> url("https://www.apache.org/licenses/LICENSE-2.0")),
     developers := List(
       Developer("kitlangton", "Kit Langton", "kit.langton@gmail.com", url("https://github.com/kitlangton"))
-    )
+    ),
+    semanticdbEnabled := true,
+    semanticdbVersion := scalafixSemanticdb.revision
   )
 )
 
@@ -66,6 +68,7 @@ lazy val core =
       scalacOptions ++= Seq(
         "-deprecation",
         "-Xcheck-macros"
+        // "-Wunused:all"
       )
     )
     .jsSettings(
@@ -92,3 +95,5 @@ lazy val examples = (crossProject(JVMPlatform).crossType(CrossType.Pure) in file
 //  )
   .dependsOn(core)
 //  .enablePlugins(ScalaJSPlugin)
+
+addCommandAlias("prepare", "scalafmtAll;scalafixAll")

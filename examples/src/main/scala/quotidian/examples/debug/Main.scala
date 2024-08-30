@@ -9,4 +9,4 @@ enum DebugLevel:
 
 object Main extends App:
   println("Hello, world!")
-  Debug.debugWithType((x: String) => x.reverse)
+  // Debug.debugWithType((x: String) => x.reverse)

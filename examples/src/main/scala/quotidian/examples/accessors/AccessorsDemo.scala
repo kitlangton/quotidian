@@ -1,6 +1,7 @@
 package quotidian.examples.accessors
 
 import zio.*
+
 import scala.concurrent.duration.fromNow
 
 trait ExampleService:

@@ -1,9 +1,10 @@
 package quotidian
 
 import quotidian.syntax.{*, given}
-import scala.quoted.*
-import scala.deriving.Mirror
+
 import scala.annotation.targetName
+import scala.deriving.Mirror
+import scala.quoted.*
 
 trait Method[Q <: Quotes, Parent]:
   val quotes: Q

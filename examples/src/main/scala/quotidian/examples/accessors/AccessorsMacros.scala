@@ -1,12 +1,13 @@
 package quotidian.examples.accessors
 
 import quotidian.*
+import quotidian.examples.lens.Lens.make
 import quotidian.syntax.*
+import zio.*
+
+import java.lang.reflect.Method
 
 import quoted.*
-import quotidian.examples.lens.Lens.make
-import zio.*
-import java.lang.reflect.Method
 
 object DeriveAccessors:
 
