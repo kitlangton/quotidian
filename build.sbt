@@ -96,4 +96,4 @@ lazy val examples = (crossProject(JVMPlatform).crossType(CrossType.Pure) in file
   .dependsOn(core)
 //  .enablePlugins(ScalaJSPlugin)
 
-addCommandAlias("prepare", "scalafmtAll;scalafixAll")
+addCommandAlias("prepare", "scalafmtAll;scalafixAll;githubWorkflowGenerate")
