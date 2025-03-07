@@ -3,7 +3,7 @@ inThisBuild(
     name           := "quotidian",
     normalizedName := "quotidian",
     organization   := "io.github.kitlangton",
-    scalaVersion   := "3.3.4",
+    scalaVersion   := "3.3.5",
     homepage       := Some(url("https://github.com/kitlangton/quotidian")),
     licenses       := List("Apache-2.0" -> url("https://www.apache.org/licenses/LICENSE-2.0")),
     developers := List(
@@ -61,8 +61,8 @@ lazy val core =
     .settings(
       name := "quotidian",
       libraryDependencies ++= Seq(
-        "dev.zio"     %% "zio-test"     % "2.1.14" % Test,
-        "dev.zio"     %% "zio-test-sbt" % "2.1.14" % Test,
+        "dev.zio"     %% "zio-test"     % "2.1.16" % Test,
+        "dev.zio"     %% "zio-test-sbt" % "2.1.16" % Test,
         "com.lihaoyi" %% "pprint"       % "0.9.0"
       ),
       scalacOptions ++= Seq(
@@ -80,9 +80,9 @@ lazy val examples = (crossProject(JVMPlatform).crossType(CrossType.Pure) in file
     name           := "quotidian-examples",
     publish / skip := true,
     libraryDependencies ++= Seq(
-      "dev.zio" %% "zio"          % "2.1.14",
-      "dev.zio" %% "zio-test"     % "2.1.14" % Test,
-      "dev.zio" %% "zio-test-sbt" % "2.1.14" % Test
+      "dev.zio" %% "zio"          % "2.1.16",
+      "dev.zio" %% "zio-test"     % "2.1.16" % Test,
+      "dev.zio" %% "zio-test-sbt" % "2.1.16" % Test
     ),
     scalacOptions ++= Seq(
       "-deprecation",
