@@ -249,7 +249,9 @@ extension (using Quotes)(self: quotes.reflect.Term)
     TermUtils.callSymbolImpl(self, symbol, targs, args)
 
 private object TermUtils:
-  def callImpl(using Quotes)(
+  def callImpl(using
+      Quotes
+  )(
       self: quotes.reflect.Term,
       name: String,
       targs: List[quotes.reflect.TypeRepr],
@@ -260,7 +262,9 @@ private object TermUtils:
     val symbol = self.symbol.methodMember(name).headOption.getOrElse(self.symbol.fieldMember(name))
     callSymbolImpl(self, symbol, targs, args)
 
-  def callSymbolImpl(using Quotes)(
+  def callSymbolImpl(using
+      Quotes
+  )(
       self: quotes.reflect.Term,
       symbol: quotes.reflect.Symbol,
       targs: List[quotes.reflect.TypeRepr],
@@ -289,7 +293,9 @@ private object TermUtils:
       case other =>
         self.selectOverloaded(symbol, targs, args)
 
-  def inferTypeArgs(using Quotes)(
+  def inferTypeArgs(using
+      Quotes
+  )(
       termParams: List[quotes.reflect.Symbol],
       args: List[quotes.reflect.Term]
   ): Map[quotes.reflect.Symbol, quotes.reflect.TypeRepr] =
