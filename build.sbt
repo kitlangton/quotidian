@@ -63,7 +63,7 @@ lazy val core =
       libraryDependencies ++= Seq(
         "dev.zio"     %% "zio-test"     % "2.1.16" % Test,
         "dev.zio"     %% "zio-test-sbt" % "2.1.16" % Test,
-        "com.lihaoyi" %% "pprint"       % "0.9.0"
+        "com.lihaoyi" %% "pprint"       % "0.9.6"
       ),
       scalacOptions ++= Seq(
         "-deprecation",
